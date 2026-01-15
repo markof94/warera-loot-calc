@@ -5,9 +5,7 @@ export const equipmentImages = {
 };
 
 export const lootboxImage = "https://app.warera.io/images/items/case1.png?v=17";
-
-export const lootboxAveragePrice = 4.5;
-export const scrapAveragePrice = 0.3;
+export const scrapImage = "https://app.warera.io/images/items/scraps.png?v=17";
 
 export const durabilityReductionPercentPerHit = 1;
 

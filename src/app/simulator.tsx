@@ -7,16 +7,16 @@ import SkillSelector, { SkillLevels } from "./components/SkillSelector";
 import {
   statRanges,
   lootboxImage,
-  lootboxAveragePrice,
   durabilityReductionPercentPerHit,
-  prices,
   EquipmentTier,
   dropChancePercentages,
-  scrapAveragePrice,
   scrapGainedPerTier,
   maxArmorPercent,
+  scrapImage,
 } from "./constants";
+import { usePrices } from "./hooks/usePrices";
 import { getSkillValue } from "./components/helper";
+import PulsingDot from "./components/PulsingDot";
 
 const BASE_DAMAGE = 10;
 const HP_REGEN_PERCENT = 10; // 10% of max HP per hour
@@ -50,6 +50,17 @@ const defaultEquipment = {
 type StatMode = "min" | "avg" | "max";
 
 const Simulator = () => {
+  // Fetch live prices from API
+  const {
+    lootboxPrice,
+    scrapPrice,
+    equipmentPrices: liveEquipmentPrices,
+    isLoading: pricesLoading,
+    error: pricesError,
+    lastUpdated: pricesLastUpdated,
+    refetch: refetchPrices,
+  } = usePrices();
+
   const [level, setLevel] = useState(33);
   const [skillLevels, setSkillLevels] =
     useState<SkillLevels>(defaultSkillLevels);
@@ -238,9 +249,9 @@ const Simulator = () => {
 
   // Equipment costs
   const equipmentCosts = useMemo(() => {
-    const chestPrice = prices.chest[equipment.chest];
-    const pantsPrice = prices.pants[equipment.pants];
-    const bootsPrice = prices.boots[equipment.boots];
+    const chestPrice = liveEquipmentPrices.chest[equipment.chest];
+    const pantsPrice = liveEquipmentPrices.pants[equipment.pants];
+    const bootsPrice = liveEquipmentPrices.boots[equipment.boots];
     const totalEquipmentPrice = chestPrice + pantsPrice + bootsPrice;
 
     // Average durability loss per hit (1-2%, so avg 1.5%)
@@ -257,7 +268,7 @@ const Simulator = () => {
       avgDurabilityLossPerHit,
       hitsUntilBreak,
     };
-  }, [equipment]);
+  }, [equipment, liveEquipmentPrices]);
 
   // Profitability calculations based on daily results
   const profitability = useMemo(() => {
@@ -267,7 +278,7 @@ const Simulator = () => {
     const avgLootboxesPerDay = dailyResults.avgLootboxes;
 
     // Income from lootboxes
-    const dailyLootboxIncome = avgLootboxesPerDay * lootboxAveragePrice;
+    const dailyLootboxIncome = avgLootboxesPerDay * lootboxPrice;
 
     // Equipment sets consumed per day
     // Each piece of equipment breaks after hitsUntilBreak hits
@@ -293,13 +304,13 @@ const Simulator = () => {
       totalEquipmentCostPerDay,
       netProfitPerDay,
       // Break-even metrics
-      lootboxesToBreakEven: totalEquipmentCostPerDay / lootboxAveragePrice,
+      lootboxesToBreakEven: totalEquipmentCostPerDay / lootboxPrice,
       profitMargin:
         dailyLootboxIncome > 0
           ? (netProfitPerDay / dailyLootboxIncome) * 100
           : 0,
     };
-  }, [dailyResults, equipmentCosts]);
+  }, [dailyResults, equipmentCosts, lootboxPrice]);
 
   // Lootbox value analysis - compare selling vs opening
   const lootboxAnalysis = useMemo(() => {
@@ -328,12 +339,15 @@ const Simulator = () => {
     for (const tier of tiers) {
       const chance = dropChancePercentages[tier] / 100;
       const avgPrice =
-        (prices.chest[tier] + prices.pants[tier] + prices.boots[tier]) / 3;
+        (liveEquipmentPrices.chest[tier] +
+          liveEquipmentPrices.pants[tier] +
+          liveEquipmentPrices.boots[tier]) /
+        3;
       const contribution = chance * avgPrice;
       expectedValuePerLootbox += contribution;
 
       const scrapGained = scrapGainedPerTier[tier];
-      const scrapValue = scrapGained * scrapAveragePrice;
+      const scrapValue = scrapGained * scrapPrice;
       expectedScrapPerLootbox += chance * scrapValue;
 
       tierBreakdown.push({
@@ -355,21 +369,21 @@ const Simulator = () => {
     };
 
     const recycleSavingsPerLootbox =
-      recycleChancePerTier.chest * prices.chest[equipment.chest] +
-      recycleChancePerTier.pants * prices.pants[equipment.pants] +
-      recycleChancePerTier.boots * prices.boots[equipment.boots];
+      recycleChancePerTier.chest * liveEquipmentPrices.chest[equipment.chest] +
+      recycleChancePerTier.pants * liveEquipmentPrices.pants[equipment.pants] +
+      recycleChancePerTier.boots * liveEquipmentPrices.boots[equipment.boots];
 
     // Scrap value of items that would be recycled (kept for use)
     const recycleScrapValue =
       recycleChancePerTier.chest *
         scrapGainedPerTier[equipment.chest] *
-        scrapAveragePrice +
+        scrapPrice +
       recycleChancePerTier.pants *
         scrapGainedPerTier[equipment.pants] *
-        scrapAveragePrice +
+        scrapPrice +
       recycleChancePerTier.boots *
         scrapGainedPerTier[equipment.boots] *
-        scrapAveragePrice;
+        scrapPrice;
 
     // Expected items per lootbox that you can use
     const usableItemChancePerLootbox =
@@ -378,7 +392,7 @@ const Simulator = () => {
       recycleChancePerTier.boots;
 
     return {
-      sellDirectValue: lootboxAveragePrice,
+      sellDirectValue: lootboxPrice,
       expectedItemValue: expectedValuePerLootbox,
       expectedScrapValue: expectedScrapPerLootbox,
       recycleSavingsPerLootbox,
@@ -387,13 +401,13 @@ const Simulator = () => {
       tierBreakdown,
       // Which strategy is best?
       bestStrategy:
-        expectedValuePerLootbox > lootboxAveragePrice
+        expectedValuePerLootbox > lootboxPrice
           ? "open_and_sell"
           : "sell_direct",
-      valueDifference: expectedValuePerLootbox - lootboxAveragePrice,
-      scrapDifference: expectedScrapPerLootbox - lootboxAveragePrice,
+      valueDifference: expectedValuePerLootbox - lootboxPrice,
+      scrapDifference: expectedScrapPerLootbox - lootboxPrice,
     };
-  }, [equipment]);
+  }, [equipment, lootboxPrice, scrapPrice, liveEquipmentPrices]);
 
   // Combined profitability with all strategies
   const strategyComparison = useMemo(() => {
@@ -403,7 +417,7 @@ const Simulator = () => {
     const equipCost = profitability.totalEquipmentCostPerDay;
 
     // Strategy 1: Sell lootboxes directly
-    const sellDirectIncome = avgLootboxesPerDay * lootboxAveragePrice;
+    const sellDirectIncome = avgLootboxesPerDay * lootboxPrice;
     const sellDirectProfit = sellDirectIncome - equipCost;
 
     // Strategy 2: Open and sell items
@@ -504,7 +518,7 @@ const Simulator = () => {
       avgUsableItemsPerDay:
         avgLootboxesPerDay * lootboxAnalysis.usableItemChancePerLootbox,
     };
-  }, [dailyResults, profitability, lootboxAnalysis]);
+  }, [dailyResults, profitability, lootboxAnalysis, lootboxPrice]);
 
   // Simulate HP regeneration over hours
   const runHpRegen = () => {
@@ -713,11 +727,11 @@ const Simulator = () => {
       const hitsUntilBreak = 100 / avgDurabilityLoss;
       const equipmentSetsPerDay = avgHitsPerDay / hitsUntilBreak;
 
-      const chestPrice = prices.chest[equipment.chest];
-      const pantsPrice = prices.pants[equipment.pants];
-      const bootsPrice = prices.boots[equipment.boots];
+      const chestPrice = liveEquipmentPrices.chest[equipment.chest];
+      const pantsPrice = liveEquipmentPrices.pants[equipment.pants];
+      const bootsPrice = liveEquipmentPrices.boots[equipment.boots];
 
-      const dailyIncome = avg * lootboxAveragePrice;
+      const dailyIncome = avg * lootboxPrice;
       const dailyEquipCost =
         equipmentSetsPerDay * (chestPrice + pantsPrice + bootsPrice);
       const dailyProfit = dailyIncome - dailyEquipCost;
@@ -755,6 +769,49 @@ const Simulator = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
+      {/* Live Prices Status Bar */}
+      <div className="mb-4 bg-gray-800 p-3 rounded-lg flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-medium text-gray-400">Live Prices</div>
+            <PulsingDot />
+          </div>
+          <div className="flex items-center gap-1">
+            <Image src={lootboxImage} alt="Lootbox" width={24} height={24} />
+            <span className="text-sm font-medium text-purple-400">
+              ${lootboxPrice.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Image src={scrapImage} alt="Scrap" width={24} height={24} />
+            <span className="text-xs text-gray-400">Scrap:</span>
+            <span className="text-sm font-medium text-orange-400">
+              ${scrapPrice.toFixed(3)}
+            </span>
+          </div>
+          {pricesLoading && (
+            <span className="text-xs text-blue-400">Loading...</span>
+          )}
+          {pricesError && (
+            <span className="text-xs text-yellow-400">{pricesError}</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {pricesLastUpdated && (
+            <span className="text-xs text-gray-500">
+              Updated: {pricesLastUpdated.toLocaleTimeString()}
+            </span>
+          )}
+          <button
+            onClick={refetchPrices}
+            disabled={pricesLoading}
+            className="text-xs px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 text-gray-300 rounded transition-colors"
+          >
+            {pricesLoading ? "..." : "Refresh"}
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Skills */}
         <div>
@@ -791,7 +848,7 @@ const Simulator = () => {
               </div>
             </div>
             <div className="flex gap-4 justify-center">
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <EquipmentIcon
                   type="chest"
                   tier={equipment.chest}
@@ -806,9 +863,13 @@ const Simulator = () => {
                 <div className="text-xs text-gray-500">
                   +{chestArmor}% Armor ({statMode})
                 </div>
+                <div className="flex items-center gap-1 text-xs text-green-400">
+                  <PulsingDot />$
+                  {liveEquipmentPrices.chest[equipment.chest].toFixed(2)}
+                </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <EquipmentIcon
                   type="pants"
                   tier={equipment.pants}
@@ -823,9 +884,13 @@ const Simulator = () => {
                 <div className="text-xs text-gray-500">
                   +{pantsArmor}% Armor ({statMode})
                 </div>
+                <div className="flex items-center gap-1 text-xs text-green-400">
+                  <PulsingDot />$
+                  {liveEquipmentPrices.pants[equipment.pants].toFixed(2)}
+                </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
+              <div className="flex flex-col gap-2">
                 <EquipmentIcon
                   type="boots"
                   tier={equipment.boots}
@@ -839,6 +904,10 @@ const Simulator = () => {
                 />
                 <div className="text-xs text-gray-500">
                   +{bootsDodge}% Dodge ({statMode})
+                </div>
+                <div className="flex items-center gap-1 text-xs text-green-400">
+                  <PulsingDot />$
+                  {liveEquipmentPrices.boots[equipment.boots].toFixed(2)}
                 </div>
               </div>
             </div>
@@ -1240,7 +1309,7 @@ const Simulator = () => {
               <div>
                 <div className="text-xs text-gray-500">Sell Lootbox</div>
                 <div className="text-xl font-bold text-purple-400">
-                  ${lootboxAveragePrice.toFixed(2)}
+                  ${lootboxPrice.toFixed(2)}
                 </div>
               </div>
               <div>
@@ -1525,7 +1594,7 @@ const Simulator = () => {
                 </div>
               </div>
               <div className="mt-3 text-xs text-gray-500">
-                Scrap price: ${scrapAveragePrice}/unit
+                Scrap price: ${scrapPrice}/unit
               </div>
             </div>
 

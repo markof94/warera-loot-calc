@@ -203,7 +203,7 @@ const SkillSelector = ({
 
       <button
         onClick={resetSkills}
-        className="mt-4 w-full py-2 px-4 bg-gray-600 hover:bg-gray-500 text-white rounded-md transition-colors"
+        className="mt-4 w-full py-1 px-4 bg-gray-600 hover:bg-gray-500 text-white rounded-md transition-colors"
       >
         Reset Skills
       </button>

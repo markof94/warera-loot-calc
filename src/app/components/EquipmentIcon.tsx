@@ -1,9 +1,8 @@
 import Image from "next/image";
-import { equipmentImages } from "../constants";
-
-export type EquipmentTier = "green" | "blue" | "purple" | "yellow" | "red";
+import { equipmentImages, EquipmentTier } from "../constants";
 
 const tierBackgrounds: Record<EquipmentTier, string> = {
+  gray: "bg-gray-500/40",
   green: "bg-green-500/40",
   blue: "bg-blue-500/40",
   purple: "bg-purple-500/40",

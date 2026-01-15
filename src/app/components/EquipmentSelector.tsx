@@ -1,4 +1,4 @@
-import { EquipmentTier } from "./EquipmentIcon";
+import { EquipmentTier } from "../constants";
 
 const EquipmentSelector = ({
   onChange,
@@ -14,6 +14,7 @@ const EquipmentSelector = ({
         value={value}
         className="text-white bg-gray-800 border border-gray-700 rounded-md p-2"
       >
+        <option value="gray">Gray</option>
         <option value="green">Green</option>
         <option value="blue">Blue</option>
         <option value="purple">Purple</option>

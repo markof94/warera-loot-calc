@@ -6,10 +6,31 @@ export const equipmentImages = {
 
 export const lootboxImage = "https://app.warera.io/images/items/case1.png?v=17";
 
+export const lootboxAveragePrice = 4.5;
+export const scrapAveragePrice = 0.3;
+
+export const durabilityReductionPercentPerHit = 1;
+
+export const maxArmorPercent = 90;
+
+export type EquipmentTier =
+  | "gray"
+  | "green"
+  | "blue"
+  | "purple"
+  | "yellow"
+  | "red";
+
+export type EquipmentType = "chest" | "pants" | "boots";
+
 export const statRanges = {
   chest: {
     type: "armor",
     tiers: {
+      gray: {
+        min: 1,
+        max: 5,
+      },
       green: {
         min: 6,
         max: 10,
@@ -35,6 +56,10 @@ export const statRanges = {
   pants: {
     type: "armor",
     tiers: {
+      gray: {
+        min: 1,
+        max: 5,
+      },
       green: {
         min: 6,
         max: 10,
@@ -60,6 +85,10 @@ export const statRanges = {
   boots: {
     type: "dodge",
     tiers: {
+      gray: {
+        min: 1,
+        max: 5,
+      },
       green: {
         min: 6,
         max: 10,
@@ -86,6 +115,7 @@ export const statRanges = {
 
 export const prices = {
   chest: {
+    gray: 2,
     green: 6,
     blue: 22,
     purple: 63,
@@ -93,6 +123,7 @@ export const prices = {
     red: 570,
   },
   pants: {
+    gray: 2,
     green: 6,
     blue: 21,
     purple: 63,
@@ -100,6 +131,7 @@ export const prices = {
     red: 550,
   },
   boots: {
+    gray: 2,
     green: 6,
     blue: 21,
     purple: 63,
@@ -133,4 +165,22 @@ export const skillDefinitions = {
     valuePerLevel: 10,
     label: "",
   },
+};
+
+export const dropChancePercentages = {
+  gray: 62,
+  green: 30,
+  blue: 7.1,
+  purple: 0.85,
+  yellow: 0.04,
+  red: 0.01,
+};
+
+export const scrapGainedPerTier = {
+  gray: 6,
+  green: 18,
+  blue: 54,
+  purple: 162,
+  yellow: 500,
+  red: 1500,
 };

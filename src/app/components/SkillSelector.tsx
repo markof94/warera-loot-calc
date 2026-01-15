@@ -154,7 +154,7 @@ const SkillSelector = ({
               </div>
 
               <div
-                className="flex flex-wrap gap-1"
+                className="flex flex-wrap gap-0.5"
                 style={{ maxWidth: "280px" }}
               >
                 {squares.map((levelNum) => {
@@ -178,7 +178,7 @@ const SkillSelector = ({
                         }
                       }}
                       disabled={!isClickable}
-                      className={`w-6 h-6 rounded-sm border transition-colors ${
+                      className={`w-5 h-8 rounded-sm border transition-colors ${
                         isFilled
                           ? "bg-blue-500 border-blue-400 hover:bg-blue-400"
                           : canAfford
